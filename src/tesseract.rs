@@ -93,11 +93,17 @@ impl TessApi {
     }
 
     pub fn get_utf8_text(&mut self) -> Result<String, std::str::Utf8Error> {
-        let text = self.raw.get_utf8_text().unwrap();
-        let cstr: &CStr = text.as_ref();
-        match cstr.to_str() {
-            Ok(s) => Ok(s.to_string()),
-            Err(e) => Err(e),
+        if let Ok(text) = self.raw.get_utf8_text() {
+            let cstr: &CStr = text.as_ref();
+            match cstr.to_str() {
+                Ok(s) => Ok(s.to_string()),
+                Err(e) => Err(e),
+            }
+        } else {
+            // return an artifically created Utf8Error to minimize breakage. Should be safe unless the Unicode Consortium suddenly makes that be valid UTF-8 (if that's even possible)
+            let r = [195, 40];
+            type MResult = Result<String, std::str::Utf8Error>;
+            MResult::Err(unsafe { std::str::from_utf8(&r).unwrap_err_unchecked() })
         }
     }
 
